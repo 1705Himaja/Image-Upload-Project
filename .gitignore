@@ -1,0 +1,3 @@
+.mypy_cache
+service-account-key.json
+.env

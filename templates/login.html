@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>File Upload</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <script>
+      async function login(event) {
+        event.preventDefault();
+
+        var formData = new FormData(event.target);
+
+        try {
+          var response = await fetch("/login", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.status === 201) {
+            window.location.href = "/";
+          } else {
+            alert("Invalid email or password");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Something went wrong!");
+        }
+      }
+    </script>
+
+    <style>
+      input {
+        width: 100%;
+        padding: 5px;
+        font-size: 1rem;
+        margin-bottom: 20px;
+      }
+
+      button {
+        text-align: center;
+        padding: 5px 20px;
+        cursor: pointer;
+      }
+
+      .btn-wrap {
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="login-root">
+      <div
+        class="box-root flex-flex flex-direction--column"
+        style="min-height: 100vh; padding-bottom: 30px; flex-grow: 1"
+      >
+        <div class="loginbackground box-background--white padding-top--64">
+          <div class="loginbackground-gridContainer">
+            <div
+              class="box-root flex-flex"
+              style="grid-area: top / start / 8 / end"
+            >
+              <div
+                class="box-root"
+                style="
+                  background-image: linear-gradient(
+                    white 0%,
+                    rgb(247, 250, 252) 33%
+                  );
+                  flex-grow: 1;
+                "
+              ></div>
+            </div>
+            <div class="box-root flex-flex" style="grid-area: 4 / 2 / auto / 5">
+              <div
+                class="box-root box-divider--light-all-2 animationLeftRight tans3s"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 6 / start / auto / 2"
+            >
+              <div
+                class="box-root box-background--blue800"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 7 / start / auto / 4"
+            >
+              <div
+                class="box-root box-background--blue animationLeftRight"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div class="box-root flex-flex" style="grid-area: 8 / 4 / auto / 6">
+              <div
+                class="box-root box-background--gray100 animationLeftRight tans3s"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 2 / 15 / auto / end"
+            >
+              <div
+                class="box-root box-background--cyan200 animationRightLeft tans4s"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 3 / 14 / auto / end"
+            >
+              <div
+                class="box-root box-background--blue animationRightLeft"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 4 / 17 / auto / 20"
+            >
+              <div
+                class="box-root box-background--gray100 animationRightLeft tans4s"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+            <div
+              class="box-root flex-flex"
+              style="grid-area: 5 / 14 / auto / 17"
+            >
+              <div
+                class="box-root box-divider--light-all-2 animationRightLeft tans3s"
+                style="flex-grow: 1"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="box-root padding-top--24 flex-flex flex-direction--column"
+          style="flex-grow: 1; z-index: 9"
+        >
+          <div
+            class="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center"
+          >
+            <h1><a href rel="dofollow">Login</a></h1>
+          </div>
+          <div class="formbg-outer">
+            <div class="formbg">
+              <div class="formbg-inner padding-horizontal--48">
+                <form onsubmit="login(event)">
+                  <label for="email">Email:</label>
+                  <input type="email" name="email" required />
+                  <br />
+                  <label for="password">Password:</label>
+                  <input type="password" name="password" required />
+                  <br />
+                  <div class="btn-wrap">
+                    <button type="submit">LOGIN</button>
+                  </div>
+                </form>
+                <p style="text-align: center; margin-top: 20px">
+                  Create Account? <a href="/signup">Sign up</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -3,6 +3,7 @@ from google.cloud import storage, firestore
 from werkzeug.utils import secure_filename
 from datetime import timedelta
 import os
+import hashlib
 import jwt
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -17,6 +18,19 @@ BUCKET_NAME = os.environ.get("BUCKET_NAME")
 bucket = storage_client.get_bucket(BUCKET_NAME)
 
 db = firestore.Client()
+def secure_filename_with_hash(filename):
+    salt = os.urandom(16)
+
+    hash_obj = hashlib.sha256()
+
+    hash_obj.update(f"{filename}{salt}".encode())
+
+    hashed_filename = hash_obj.hexdigest()
+
+    file_extension = filename.rsplit('.', 1)[1] if '.' in filename else ''
+    secure_filename = f"{hashed_filename}.{file_extension}" if file_extension else hashed_filename
+
+    return secure_filename
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -124,22 +138,25 @@ def upload_file():
             print(file)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-
+                #  hash filename using salt and random sed
+                # filename =  str(os.urandom(16)) + filename.replace(" ", "_").rstrip('.')[1:]
+                snmae =  secure_filename_with_hash(file.filename)
                 # Upload the file to Google Cloud Storage
-                blob = bucket.blob(filename)
+                blob = bucket.blob(snmae)
                 blob.upload_from_file(file)
 
                 # Store metadata in Firestore
                 file_metadata = {
                     'creator':g.get("email"),
                     'filename': filename,
-                    'location': f'https://storage.googleapis.com/{BUCKET_NAME}/{filename}',
+                    'id': snmae,
+                    'location': f'https://storage.googleapis.com/{BUCKET_NAME}/{snmae}',
                 }
                 db.collection('files').add(file_metadata)
 
     # Retrieve metadata from Firestore
     file_metadata = db.collection('files').where("creator","==", g.get("email")).stream()
-    data = [{'name':img.to_dict()["filename"], 'url':img.to_dict()["location"]} for img in file_metadata]
+    data = [{'name':img.to_dict()["filename"],'id': img.to_dict()['id'],'url':f'/download/{img.to_dict()["id"]}'} for img in file_metadata]
 
     return render_template('index.html', images=data)
 
@@ -153,6 +170,27 @@ def download_file(filename):
         method='GET'
     )
     return redirect(signed_url)
+
+
+@app.route('/delete/<filename>')
+def delete_file(filename):
+    # if user is not logged in, redirect to login page
+    if not check_jwt():
+        return redirect(url_for('login'))
+    # if user is not the creator of the file, redirect to home page
+    file_metadata = db.collection('files').where("creator","==", g.get("email")).where("id","==",filename).stream()
+    if len(list(file_metadata)) == 0:
+        return redirect(url_for('upload_file'))
+    
+    blob = bucket.blob(filename)
+    blob.delete()
+
+    # Delete the metadata from Firestore
+    file_metadata = db.collection('files').where("creator","==", g.get("email")).where("id","==",filename).stream()
+    for img in file_metadata:
+        img.reference.delete()
+
+    return redirect(url_for('upload_file'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

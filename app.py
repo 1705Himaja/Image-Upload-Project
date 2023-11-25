@@ -10,7 +10,16 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
 
-storage_client = storage.Client()
+GOOGLE_APPLICATION_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION')
+with open('google-credentials.json', 'w') as outfile:
+    outfile.write(GOOGLE_APPLICATION_CREDENTIALS)
+
+
+# Client for datastore
+storage_client = storage.Client.from_service_account_json(
+    'google-credentials.json')
+
+# storage_client = storage.Client()
 
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
@@ -18,6 +27,8 @@ BUCKET_NAME = os.environ.get("BUCKET_NAME")
 bucket = storage_client.get_bucket(BUCKET_NAME)
 
 db = firestore.Client()
+
+
 def secure_filename_with_hash(filename):
     salt = os.urandom(16)
 
@@ -32,8 +43,10 @@ def secure_filename_with_hash(filename):
 
     return secure_filename
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def check_jwt():
     jwt_cookie = request.cookies.get('jwt')
@@ -56,17 +69,18 @@ def check_jwt():
 
 @app.before_request
 def protect():
-    if request.endpoint=="static":
+    if request.endpoint == "static":
         return
     if check_jwt():
         if request.endpoint == "login" or request.endpoint == "signup":
             return redirect("/")
     elif request.endpoint != "login" and request.endpoint != "signup":
         return redirect(url_for('login'))
-    
+
+
 def get_user(email):
     query = db.collection('user').where('email', '==', email).limit(1)
-    
+
     results = query.stream()
 
     for user_document in results:
@@ -79,13 +93,14 @@ def add_user(email, password):
     userExists = get_user(email)
     if userExists:
         return False
-    
+
     db.collection("user").add({
         'email': email,
         'password': password,
     })
 
     return True
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -94,10 +109,10 @@ def signup():
         password = request.form['password']
         user = get_user(email)
         if user:
-            return jsonify({"status":"Fail", "message":'Email already exists!'}), 409
+            return jsonify({"status": "Fail", "message": 'Email already exists!'}), 409
         else:
             add_user(email, password)
-            return jsonify({"status":"Success"}), 201
+            return jsonify({"status": "Success"}), 201
     return render_template('signup.html')
 
 
@@ -114,10 +129,11 @@ def login():
             token = jwt.encode(
                 {'email': email}, JWT_SECRET_KEY, algorithm='HS256')
 
-            response = make_response(jsonify({"status":"Success"}), 201)
+            response = make_response(jsonify({"status": "Success"}), 201)
             response.set_cookie("jwt", token, httponly=True)
             return response
-        response = make_response(jsonify({"status":"Fail", "message":"Invalid email or password"}), 400)
+        response = make_response(
+            jsonify({"status": "Fail", "message": "Invalid email or password"}), 400)
         return response
 
     return render_template('login.html')
@@ -140,14 +156,14 @@ def upload_file():
                 filename = secure_filename(file.filename)
                 #  hash filename using salt and random sed
                 # filename =  str(os.urandom(16)) + filename.replace(" ", "_").rstrip('.')[1:]
-                snmae =  secure_filename_with_hash(file.filename)
+                snmae = secure_filename_with_hash(file.filename)
                 # Upload the file to Google Cloud Storage
                 blob = bucket.blob(snmae)
                 blob.upload_from_file(file)
 
                 # Store metadata in Firestore
                 file_metadata = {
-                    'creator':g.get("email"),
+                    'creator': g.get("email"),
                     'filename': filename,
                     'id': snmae,
                     'location': f'https://storage.googleapis.com/{BUCKET_NAME}/{snmae}',
@@ -155,10 +171,13 @@ def upload_file():
                 db.collection('files').add(file_metadata)
 
     # Retrieve metadata from Firestore
-    file_metadata = db.collection('files').where("creator","==", g.get("email")).stream()
-    data = [{'name':img.to_dict()["filename"],'id': img.to_dict()['id'],'url':f'/download/{img.to_dict()["id"]}'} for img in file_metadata]
+    file_metadata = db.collection('files').where(
+        "creator", "==", g.get("email")).stream()
+    data = [{'name': img.to_dict()["filename"], 'id': img.to_dict(
+    )['id'], 'url': f'/download/{img.to_dict()["id"]}'} for img in file_metadata]
 
     return render_template('index.html', images=data)
+
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -166,7 +185,8 @@ def download_file(filename):
     blob = bucket.blob(filename)
     signed_url = blob.generate_signed_url(
         version='v4',
-        expiration=timedelta(minutes=30),  # Adjust the expiration time as needed
+        # Adjust the expiration time as needed
+        expiration=timedelta(minutes=30),
         method='GET'
     )
     return redirect(signed_url)
@@ -178,19 +198,22 @@ def delete_file(filename):
     if not check_jwt():
         return redirect(url_for('login'))
     # if user is not the creator of the file, redirect to home page
-    file_metadata = db.collection('files').where("creator","==", g.get("email")).where("id","==",filename).stream()
+    file_metadata = db.collection('files').where(
+        "creator", "==", g.get("email")).where("id", "==", filename).stream()
     if len(list(file_metadata)) == 0:
         return redirect(url_for('upload_file'))
-    
+
     blob = bucket.blob(filename)
     blob.delete()
 
     # Delete the metadata from Firestore
-    file_metadata = db.collection('files').where("creator","==", g.get("email")).where("id","==",filename).stream()
+    file_metadata = db.collection('files').where(
+        "creator", "==", g.get("email")).where("id", "==", filename).stream()
     for img in file_metadata:
         img.reference.delete()
 
     return redirect(url_for('upload_file'))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

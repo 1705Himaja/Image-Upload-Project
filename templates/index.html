@@ -153,8 +153,8 @@
             <div class="content">
               <div>
                 <div
-                  style="cursor:pointer"
-                  onclick="openModal('{{ img.url }}', '{{ img.name }}')"
+                  style="cursor: pointer"
+                  onclick="openModal('{{ img.url }}', '{{ img.name }}', '{{ img.image_size }}')"
                 >
                   <h2>View</h2>
                 </div>
@@ -162,6 +162,9 @@
                   <h2 style="color: white; background: red">Delete</h2>
                 </a>
               </div>
+              <p style="text-align: right; width: 100%">
+                Size: {{ img.image_size }}
+              </p>
             </div>
           </div>
           {% endfor %} {% else %}
@@ -180,21 +183,32 @@
           <button onclick="closeModal()">Close</button>
         </div>
         <div id="caption" class="modal-caption"></div>
+        <p
+          id="cap-size"
+          style="
+            width: 100%;
+            background-color: white;
+            color: black;
+            text-align: center;
+          "
+        ></p>
       </div>
     </div>
 
     <script>
-      function openModal(src, alt) {
+      function openModal(src, alt, size) {
         var modal = document.getElementById("myModal");
         var modalImg = document.getElementById("img01");
         var captionText = document.getElementById("caption");
         var downloadLink = document.getElementById("downloadLink");
         var span = document.getElementsByClassName("close")[0];
+        let cap_size = document.getElementById("cap-size");
 
         modal.style.display = "block";
         modalImg.src = src;
         captionText.innerHTML =
           alt.length > 15 ? alt.substring(0, 15) + "..." : alt;
+        cap_size.innerHTML = "Size: " + size;
         downloadLink.href = src;
         downloadLink.download = alt; // Optional: Set the download file name
 
@@ -213,7 +227,7 @@
           modal.style.display = "none";
         }
       };
-       document.addEventListener("contextmenu", (event) =>
+      document.addEventListener("contextmenu", (event) =>
         event.preventDefault()
       );
     </script>

@@ -145,6 +145,17 @@ def logout():
     return response
 
 
+def sizeOfImage(image):
+    image_size_kb = image['image_size'] / 1024
+    image_size_mb = image_size_kb / 1024
+    print(image)
+    if image_size_mb > 1:
+        image['image_size'] = f"{round(image_size_mb, 2)} mb"
+    else:
+        image['image_size'] = f"{round(image_size_kb, 2)} kb"
+    return image['image_size']
+
+
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -153,27 +164,24 @@ def upload_file():
             print(file)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                #  hash filename using salt and random sed
-                # filename =  str(os.urandom(16)) + filename.replace(" ", "_").rstrip('.')[1:]
                 snmae = secure_filename_with_hash(file.filename)
-                # Upload the file to Google Cloud Storage
                 blob = bucket.blob(snmae)
                 blob.upload_from_file(file)
 
-                # Store metadata in Firestore
                 file_metadata = {
                     'creator': g.get("email"),
                     'filename': filename,
                     'id': snmae,
+                    'image_size': blob.size,
                     'location': f'https://storage.googleapis.com/{BUCKET_NAME}/{snmae}',
                 }
                 db.collection('files').add(file_metadata)
 
-    # Retrieve metadata from Firestore
     file_metadata = db.collection('files').where(
         "creator", "==", g.get("email")).stream()
-    data = [{'name': img.to_dict()["filename"], 'id': img.to_dict(
-    )['id'], 'url': f'/download/{img.to_dict()["id"]}'} for img in file_metadata]
+    print(file_metadata)
+    data = [{'name': img.to_dict()["filename"], 'image_size': sizeOfImage(img.to_dict()), 'id': img.to_dict()[
+        'id'], 'url': f'/download/{img.to_dict()["id"]}'} for img in file_metadata]
 
     return render_template('index.html', images=data)
 

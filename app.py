@@ -15,7 +15,6 @@ with open('google-credentials.json', 'w') as outfile:
     outfile.write(GOOGLE_APPLICATION_CREDENTIALS)
 
 
-# Client for datastore
 storage_client = storage.Client.from_service_account_json(
     'google-credentials.json')
 

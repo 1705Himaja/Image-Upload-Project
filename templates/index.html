@@ -143,30 +143,79 @@
             </div>
           </div>
           <!-- End of form -->
-
-          <div class="container">
-            {% if images %} {% for img in images %}
-            <div class="box">
-              <div class="imgBx">
-                <img src="{{ img.url }}" alt="{{ img.name }}" />
-              </div>
-              <div class="content">
-                <div>
-                  <a href="{{ img.url }}" download>
-                    <h2>Download</h2>
-                  </a>
-                  <a href="{{ url_for('delete_file', filename=img.id) }}" >
-                    <h2 style="color:white; background: red;">Delete</h2>
-                  </a>
+        </div>
+        <div class="container">
+          {% if images %} {% for img in images %}
+          <div class="box">
+            <div class="imgBx">
+              <img src="{{ img.url }}" alt="{{ img.name }}" />
+            </div>
+            <div class="content">
+              <div>
+                <div
+                  style="cursor:pointer"
+                  onclick="openModal('{{ img.url }}', '{{ img.name }}')"
+                >
+                  <h2>View</h2>
                 </div>
+                <a href="{{ url_for('delete_file', filename=img.id) }}">
+                  <h2 style="color: white; background: red">Delete</h2>
+                </a>
               </div>
             </div>
-            {% endfor %} {% else %}
-            <p>No images have been uploaded yet.</p>
-            {% endif %}
           </div>
+          {% endfor %} {% else %}
+          <p>No images have been uploaded yet.</p>
+          {% endif %}
         </div>
       </div>
     </div>
+
+    <div id="myModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <img id="img01" style="width: 100%" />
+        <div class="modal-footer">
+          <a id="downloadLink" href="#" download>Download</a>
+          <button onclick="closeModal()">Close</button>
+        </div>
+        <div id="caption" class="modal-caption"></div>
+      </div>
+    </div>
+
+    <script>
+      function openModal(src, alt) {
+        var modal = document.getElementById("myModal");
+        var modalImg = document.getElementById("img01");
+        var captionText = document.getElementById("caption");
+        var downloadLink = document.getElementById("downloadLink");
+        var span = document.getElementsByClassName("close")[0];
+
+        modal.style.display = "block";
+        modalImg.src = src;
+        captionText.innerHTML =
+          alt.length > 15 ? alt.substring(0, 15) + "..." : alt;
+        downloadLink.href = src;
+        downloadLink.download = alt; // Optional: Set the download file name
+
+        span.onclick = function () {
+          modal.style.display = "none";
+        };
+      }
+      function closeModal() {
+        var modal = document.getElementById("myModal");
+        modal.style.display = "none";
+      }
+
+      window.onclick = function (event) {
+        var modal = document.getElementById("myModal");
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      };
+       document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+    </script>
   </body>
 </html>

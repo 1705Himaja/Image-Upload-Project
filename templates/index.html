@@ -207,7 +207,7 @@
         modal.style.display = "block";
         modalImg.src = src;
         captionText.innerHTML =
-          alt.length > 15 ? alt.substring(0, 15) + "..." : alt;
+          alt.length > 25 ? alt.substring(0, 25) + "..." : alt;
         cap_size.innerHTML = "Size: " + size;
         downloadLink.href = src;
         downloadLink.download = alt; // Optional: Set the download file name
